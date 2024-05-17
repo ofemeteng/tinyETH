@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>tinybin: Secure Comparison of User's Guess to API-Supplied Target</title>
+    <script>
+      var favIcon = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAGFBMVEUAAABHcEwAAAAAAAAAAAAAAAAAAAAAAACpMnD0AAAAB3RSTlNjAL+fpPk8rO4B2AAAADNJREFUGJVjYEQDDIxsLMxwwMIGFGBgRwIMOAVYgQBZgAlkHNMgEwB6joUB7E8WiOfQAADiPANLertncwAAAABJRU5ErkJggg==";
+      var docHead = document.getElementsByTagName('head')[0];
+      var newLink = document.createElement('link');
+      newLink.rel = 'shortcut icon';
+      newLink.type = 'image/x-icon';
+      newLink.href = 'data:image/png;base64,'+favIcon;
+      docHead.appendChild(newLink);
+    </script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cabin:wght@300;400;500;700" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
+          integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+    <style>
+      /*****************
+       * Color scheme. *
+       *****************/
+      :root {
+        --color-text:#000000;
+        --color-background:#FFFFFF;
+        --color-border:#000000;
+        --color-link:#0000FF;
+        --color-link-hover:#000000;
+        --color-interactive:#0000FF;
+        --color-interactive-text:#FFFFFF;
+        --color-interactive-text-disabled:#777777;
+        --color-interactive-hover:#000000;
+        --color-interactive-disabled-light:#CCCCCC;
+        --color-interactive-disabled-dark:#444444;
+        --color-interactive-shadow:#555555;
+        --color-separator:#000000;
+        --color-client-background:#FFFFFF;
+        --color-client-border:#000000;
+        --color-client-text:#000000;
+        --color-node-background:#00003F;
+        --color-node-border:#00003F;
+        --color-node-text:#FFFFFF;
+        --color-diagram-edge:#000000;
+        --color-footer-background:#0000FF;
+        --color-footer-text:#FFFFFF;
+        --color-footer-link:#FFFFFF;
+        --color-footer-link-hover:#FFFFFF;
+      }
+
+      /******************************************
+       * Customizations of common dependencies. *
+       ******************************************/
+      #pyscript_loading_splash { z-index:8192; }
+
+      /********************************************* 
+       * High-level page layout, look, and design. *
+       *********************************************/
+      html { height:100vh; }
+      body {
+        display:flex; flex-direction:column;
+        min-height:100vh;
+        min-width:500px !important;
+        padding:0px 0px 0px 0px;
+        background-color:var(--color-background);
+        font-family:'Cabin',sans-serif;
+        color:var(--color-text);
+      }
+      .container > .row { margin-bottom:8px; }
+      .card-deck .card { border:0px; min-width:220px; }
+      .card {
+        min-width:350px !important;
+        background-color:var(--color-background);
+        color:var(--color-text);
+      }
+      .card-body { padding:2px 10px 2px 10px; line-height:18px; font-size:14px; }
+      a { font-weight:bold; text-decoration:none; color:var(--color-link); }
+      a:hover { text-decoration:none; color:var(--color-link-hover); }
+      .header { min-height:100px; margin-top:60px; margin-bottom:20px; }
+      hr { margin:0px; border-top:1px solid var(--color-separator) !important; opacity:1; }
+      h1 { text-align:left; }
+      h2 { margin-top:10px; line-height:24px; font-size:18px; font-weight:normal; }
+      h3 {
+        width:100%;
+        margin-bottom:0px;
+        padding:0px 0px 6px 0px;
+        text-align:left;
+        white-space:nowrap;
+        font-size:20px;
+      }
+      .footer-spacer { margin-top:70px; }
+      footer {
+        width:100%;
+        margin:auto auto 0 auto;
+        padding:16px 0px 16px 0px;
+        background-color:var(--color-footer-background);
+        color:var(--color-footer-text);
+      }
+      footer a { color:var(--color-footer-link); }
+      footer a:hover { color:var(--color-footer-link-hover); }
+      footer .card-deck { margin-bottom:0px !important; }
+      footer .card { margin-bottom:0px !important; border:0px; background-color:var(--color-footer-background); }
+      footer .card-body-items { padding:8px 20px 0px 20px; }
+      footer .card-body-items-left { float:left; }
+      footer .card-body-items-right { float:right; }
+      footer .card-deck-copyright { height:26x !important; font-size:10px; }
+      footer .card-copyright { height:26px !important; padding:0px 16px 0px 16px; font-size:12px !important; }
+      footer .license-phrase { color:var(--color-footer-text); }
+      footer .item { margin:0px 25px 0px 0px; white-space:nowrap; font-size:14px; }
+      footer .icon { margin:0px 15px 0px 0px; font-size:20px; }
+      footer .icon:last-child { margin-right:0px; font-size:18px; }
+      .noselect {
+        -webkit-touch-callout:none; /* iOS Safari */
+          -webkit-user-select:none; /* Safari */
+           -khtml-user-select:none; /* Konqueror HTML */
+             -moz-user-select:none; /* Old versions of Firefox */
+              -ms-user-select:none; /* Internet Explorer/Edge */
+                  user-select:none; /* Non-prefixed version, currently
+                                       supported by Chrome, Edge, Opera and Firefox */
+      }
+      @media (min-width:768px) { html { font-size:16px; } }
+      @media all and (max-width:618px) { .header { margin-top:50px; } }
+
+
+      /************************************************************
+       * Layout for steps and data flow visualization containers. *
+       ************************************************************/
+      .grid-row { display:grid; grid-auto-rows:auto; grid-row-gap:0px; grid-column-gap:0px; }
+      .grid-col { padding:0px 6px 0px 6px; }
+      .grid-row-clients { grid-template-columns:3fr 4.5fr 4.5fr; }
+      .grid-row-nodes { grid-template-columns:3fr 3fr 3fr 3fr; }
+      .grid-row-recipient { grid-template-columns:3fr 9fr; }
+      .grid-row-diagram { grid-template-columns:3fr 9fr; }
+      .grid-row-diagram .grid-col { height:100px; }
+
+      /**************************************************** 
+       * Guidance/expository content layout and behavior. *
+       ****************************************************/
+      .step > ol > li { margin-left:8px; font-size:42px; font-weight:bold; }
+      .step > ol > li > div {
+        position:relative;
+        top:-16px;
+        padding-right:8px;
+        line-height:24px; 
+        font-size:18px; font-weight:normal;
+      }
+      @media all and (max-width:991px) { 
+        .step > ol > li { font-size:32px; }
+        .step > ol > li > div { top:-10px; padding-right:0px; line-height:20px; font-size:18px; }
+      }
+      @media all and (max-width:767px) {
+        .step > ol { margin-left:-12px; }
+        .step > ol > li { font-size:26px; }
+        .step > ol > li > div { top:-10px; padding-right:0px; line-height:14px; font-size:12px; }
+      }
+
+      /***********************************************************
+       * Panel elements (representing parties) and their layout. *
+       ***********************************************************/
+      .panel { height:100%; width:100%; margin:0px 10px 0px 0px; padding:0px 10px 0px 10px; }
+      .entity { height:100%; margin-top:0px; padding:20px 24px 20px 24px; }
+      .entity > div { display:table; height:100%; width:100%; }
+      .entity > div > div { display:table-row; }
+      .entity > div > div > div { display:table-cell; padding-bottom:14px; text-align:center; }
+      .entity > div > div:last-child > div { vertical-align:bottom; } /* Usually client buttons. */
+      .client {
+        border:1px solid var(--color-client-border);
+        background-color:var(--color-client-background);
+        color:var(--color-client-text);
+      }
+      .node {
+        border:1px solid var(--color-node-border);
+        background-color:var(--color-node-background);
+        color:var(--color-node-text);
+      }
+      .recipient > div > div > div { vertical-align:middle !important; } /* Usually output. */
+      h3 { margin-bottom:6px; }
+      h4 { margin-top:8px; padding-top:2px; text-align:center; line-height:16px !important; font-size:14px; }
+      @media all and (max-width:991px) { 
+        .client { padding:10px; }
+        h3 { font-size:14px; }
+      }
+      @media all and (max-width:767px) {
+        .panel { padding:0px; }
+        .entity { padding:10px; }
+        h4 { line-height:14px; font-size:12px !important; }
+      }
+      @media all and (max-width:575px) {
+        .entity { height:100%; margin-top:0px; }
+        h3 { font-size:14px; }
+        h4 { line-height:12px !important; font-size:10px !important; }
+      }
+
+      /**************************************************** 
+       * Interactive user interface (UI) common elements. *
+       ****************************************************/
+      .array { height:20px; margin:0px 4px 0px 4px; white-space:nowrap; }
+      .array > span {
+        padding:1px 4px 1px 4px;
+        border-top:1px solid var(--color-text);
+        border-left:1px solid var(--color-text);
+        border-bottom:1px solid var(--color-text);
+        font-size:12px; font-weight:bold;
+      }
+      .array > span:last-child { border-right:1px solid var(--color-text); }
+      .bytes { position:relative; height:10px; margin:8px 4px 8px 4px; white-space:nowrap; }
+      .bytes > span {
+        position:relative; top:-2px;
+        padding-right:24px;
+        font-size:14px;
+      }
+      .bytes > table { height:100%; width:100%; }
+      @media all and (max-width:539px) {
+        .array > span { font-size:10px; }
+        .bytes > span { font-size:10px; }
+      }
+      button {
+        width:100%;
+        margin:0px 2px 2px 0px;
+        -webkit-box-shadow: 2px 2px 0px 0px var(--color-interactive-shadow);
+        -moz-box-shadow: 2px 2px 0px 0px var(--color-interactive-shadow);
+        box-shadow: 2px 2px 0px 0px var(--color-interactive-shadow);
+        padding:8px;
+        border:0px solid #000000;
+        background-color:var(--color-interactive);
+        color:var(--color-interactive-text);
+      }
+      button:hover { background-color:var(--color-interactive-hover); }
+      button:active {
+        margin:2px 0px 0px 2px;
+        -webkit-box-shadow: 0px 0px 0px 0px var(--color-interactive-shadow);
+        -moz-box-shadow: 0px 0px 0px 0px var(--color-interactive-shadow);
+        box-shadow: 0px 0px 0px 0px var(--color-interactive-shadow);
+      }
+      button:disabled {
+        background-color:var(--color-interactive-disabled-light);
+        color:var(--color-interactive-text-disabled);
+      }
+      #recipient-output {
+        margin-top:0px;
+        padding:0px 20px 10px 20px;
+        text-align:center;
+        font-size:32px;
+      }
+      @media all and (max-width:767px) {
+        button { font-size:14px; }
+        #recipient-output { line-height:28px; font-size:24px; }
+      }
+      @media all and (max-width:575px) {
+        button { line-height:12px !important; font-size:10px; }
+        #recipient-output { margin-bottom:6px; line-height:24px; font-size:20px; }
+      }
+
+      /***************************************************************
+       * Interactive user interface (UI) custom layout and elements. *
+       ***************************************************************/
+      .int { width:100%; overflow:hidden; word-break:break-word; word-wrap:break-word; font-family:Monospace; font-size:10px; }
+      .guess-radio { margin-top:20px; margin-bottom:12px; }
+      .guess-radio > .ui-checkboxradio-label {
+        width:90px;
+        border:1px solid var(--color-client-text);
+        border-radius:0px;
+        background-color:var(--color-client-background) !important;
+        padding:20px;
+        text-align:center;
+        font-family:'Saira',sans-serif; font-weight:500;
+        color:var(--color-client-text);
+      }
+      .guess-radio > .ui-checkboxradio-label:first-child {
+        border-bottom:0px solid var(--color-client-text);
+      }
+      .guess-radio > .ui-state-hover {
+        background-color:var(--color-interactive-hover) !important;
+      }
+      .guess-radio > .ui-state-active { 
+        color:var(--color-interactive-text);
+        background-color:var(--color-interactive) !important;
+      }
+      @media all and (max-width:767px) {
+        .guess-radio > .ui-checkboxradio-label { width:40px; font-size:9px !important; }
+      }
+      @media all and (max-width:575px) {
+        .guess-radio > .ui-checkboxradio-label { font-size:10px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container header">
+      <div class="card-deck mb-3">
+        <div class="card mb-4">
+          <div class="card-body">
+            <h1><b>tinybin</b>: Secure Comparison of User's Guess to API-Supplied Target</h1>
+            <hr/>
+            <h2>
+              <p>
+              This secure comparison demo (source code <a href="https://github.com/nillionnetwork/tinybin">available on GitHub</a>) simulates a secure multi-party computation (MPC) protocol <b>entirely in your browser</b> by importing and invoking the <a href="https://github.com/nillionnetwork/tinynmc">tinynmc</a> libraries using <a href="https://pyscript.net">PyScript</a>.
+              </p>
+              <p>
+                Within the implementation of the library, vectors of <a href="https://en.wikipedia.org/wiki/Finite_field">finite field</a> elements are used to represent both the masked data sent to nodes and the overall result. In the visualizations below, instances of these data structures are visually presented as a variant of a <a href="https://en.wikipedia.org/wiki/Heat_map">heat map</a> in which the brightness value corresponds to the difference between the finite field element and zero. For example, a vector such as
+                <span class="array">
+                  <span>1 mod 11</span><span>5 mod 11</span><span>8 mod 11</span><span>3 mod 11</span><span>10 mod 11</span>
+                </span>
+                is represented by
+                <span class="bytes" style="margin-right:-2px;">
+                  <span style="background-color:rgb(25,25,25);">&nbsp;</span><span style="background-color:rgb(128,128,128);"></span><span style="background-color:rgb(200,200,200);"></span><span style=" background-color:rgb(80,80,80);"></span><span style="background-color:rgb(230,230,230);"></span>
+                </span>.
+              </p>
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="grid-row grid-row-clients">
+        <div class="grid-col">
+          <div class="step">
+            <ol start="1">
+              <li>
+                <div>
+                  For both the guess that is supplied by a user and the target that is obtained from a third-party API service, masks are requested from the nodes. The guess and target number are then each masked and broadcast to the nodes.
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+        <div class="grid-col">
+          <div class="panel" id="panel-guess">
+            <div class="entity client">
+              <div>
+                <div><h3>Submit Guess (from User)</h3></div>
+                <div>
+                  <div style="height:100%;">
+                    <div>
+                      <fieldset class="guess-radio">
+                        <label for="guess-radio-0-A" class="ui-checkboxradio-label ui-corner-all ui-button ui-widget ui-checkboxradio-radio-label">Even</label>
+                        <input type="radio" class="ui-checkboxradio ui-helper-hidden-accessible" name="guess-radio-0" id="guess-radio-0-A" value="0">
+                        <br/>
+                        <label for="guess-radio-0-B" class="ui-checkboxradio-label ui-corner-all ui-button ui-widget ui-checkboxradio-radio-label">Odd</label>
+                        <input type="radio" class="ui-checkboxradio ui-helper-hidden-accessible" name="guess-radio-0" id="guess-radio-0-B" value="1">
+                      </fieldset>
+                    </div>
+                  </div>
+                </div>
+                <div><div><button id="guess" disabled>Mask &amp; Submit</button></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col">
+          <div class="panel" id="panel-retrieve">
+            <div class="entity client">
+              <div>
+                <div><h3>Submit Target (from API Endpoint)</h3></div>
+                <div>
+                  <div style="height:100%;">
+                    <table style="height:100%; width:100%; border:1px solid #000000; font-size:20px;">
+                      <tr>
+                        <td id="target">
+                          The target value obtained
+                          <br/>via an API GET request sent to
+                          <a href="https://httpbin.org/bytes/1"><code>https://httpbin.org/bytes/1</code></a>
+                          <br/>will appear here.
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+                <div><div><button id="retrieve" disabled>Retrieve, Mask, &amp; Submit</button></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-row grid-row-diagram">
+        <div class="grid-col"></div>
+        <div class="grid-col">
+          <div id="diagram-input"></div>
+        </div>
+      </div>
+      <div class="grid-row grid-row-nodes">
+        <div class="grid-col">
+          <div class="step" id="step-nodes">
+            <ol start="2">
+              <li>
+                <div>
+                  Each node receives the masked data, and then locally computes its secret share of the overall result.
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+        <div class="grid-col">
+          <div class="panel">
+            <div class="entity node" id="node-0">
+              <div>
+                <div><h3>Node 0</h3></div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-0-masked-0-title" style="opacity:0;">Masked Guess</h4>
+                    <div class="bytes" id="node-0-masked-0-masked"></div>
+                  </div>
+                </div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-0-masked-1-title" style="opacity:0;">Masked Target</h4>
+                    <div class="bytes" id="node-0-masked-1-masked"></div>
+                  </div>
+                </div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-0-share-title" style="opacity:0;">Secret Share of Result</h4>
+                    <div class="int" id="node-0-share"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col">
+          <div class="panel">
+            <div class="entity node" id="node-1">
+              <div>
+                <div><h3>Node 1</h3></div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-1-masked-0-title" style="opacity:0;">Masked Guess</h4>
+                    <div class="bytes" id="node-1-masked-0-masked"></div>
+                  </div>
+                </div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-1-masked-1-title" style="opacity:0;">Masked Target</h4>
+                    <div class="bytes" id="node-1-masked-1-masked"></div>
+                  </div>
+                </div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-1-share-title" style="opacity:0;">Secret Share of Result</h4>
+                    <div class="int" id="node-1-share"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col">
+          <div class="panel">
+            <div class="entity node" id="node-2">
+              <div>
+                <div><h3>Node 2</h3></div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-2-masked-0-title" style="opacity:0;">Masked Guess</h4>
+                    <div class="bytes" id="node-2-masked-0-masked"></div>
+                  </div>
+                </div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-2-masked-1-title" style="opacity:0;">Masked Target</h4>
+                    <div class="bytes" id="node-2-masked-1-masked"></div>
+                  </div>
+                </div>
+                <div>
+                  <div>
+                    <h4 class="noselect" id="node-2-share-title" style="opacity:0;">Secret Share of Result</h4>
+                    <div class="int" id="node-2-share"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-row grid-row-diagram">
+        <div class="grid-col"></div>
+        <div class="grid-col">
+          <div id="diagram-output"></div>
+        </div>
+      </div>
+      <div class="grid-row grid-row-recipient">
+        <div class="grid-col">
+          <div class="step" id="step-recipient">
+            <ol start="3">
+              <li>
+                <div>
+                  After receiving the secret shares of the result from each node, the adjudicating party can reconstruct the overall output to determine the outcome.
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+        <div class="grid-col">
+          <div class="panel">
+            <div class="entity client recipient" id="recipient">
+              <div>
+                <div><h3>Network Output</h3></div>
+                <div>
+                  <div>
+                    <div id="recipient-output"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-spacer"></div>
+    <footer>
+      <div class="container noselect">
+        <div class="card-deck mb-3">
+          <div class="card mb-4">
+            <div class="card-body card-body-items">
+              <div class="card-body-items-left">
+                <span class="item">
+                  <span class="license-phrase">Made available under the </span>
+                  <a href="https://opensource.org/license/mit/">MIT License</a>
+                </span>
+              </div>
+              <div class="card-body-items-right">
+                <span class="icon"><a href="mailto:engineering@nillion.com"><i class="far fa-envelope"></i></a></span>
+                <span class="icon"><a href="https://github.com/nillionnetwork"><i class="fab fa-github"></i></a></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-deck mb-3 card-deck-copyright">
+          <div class="card mb-4 card-copyright"></div>
+        </div>
+      </div>
+    </footer>
+    <py-config>
+      packages = ["tinynmc~=0.2"]
+    </py-config>
+    <section class="pyscript">
+      <py-script>
+        from __future__ import annotations
+        from typing import Dict, List, Tuple, Sequence, Iterable
+        import secrets
+        from modulo import modulo
+        import tinynmc
+        from tinynmc import node, preprocess
+        from pyodide.ffi import create_proxy
+        import asyncio
+        import js
+
+        def encode(
+                data: Sequence[float],
+                for_target: bool = False
+            ) -> Dict[Tuple[int, int], int]:
+            return (
+                {(1, 1): data[0]}
+                if for_target else
+                {(0, 0): -data[0], (0, 1): data[1], (1, 0): data[0]}
+            )
+
+        def modulo_to_uint8(m):
+            return (256 * int(m)) // m.modulus
+
+        def show_share(share, element_id):
+            element = js.document.getElementById(element_id)
+            share = str(int(share))
+            element.innerHTML = share
+
+        def compute_and_reveal(guess_masked, target_masked):
+            shares = []
+            for (node_id, node) in enumerate(nodes):
+                result_share = node.compute(signature, [guess_masked, target_masked])
+                shares.append(result_share)
+                js.nodeShowShare(node_id)
+                show_share(result_share, 'node-' + str(node_id) + '-share')
+
+            js.document.getElementById('recipient-output').innerHTML = (
+                'User guessed correctly!'
+                if int(sum(shares)) == 0 else
+                'User guessed incorrectly.'
+            )
+
+        def mask_and_submit_guess(_):
+            global guess_masked
+            js.clientMaskAndSubmitGuess()
+            parity = js.getGuess()
+            guess = [secrets.randbelow(MODULUS), int(parity)]
+            js.nodesEnable()
+            masks = [node.masks(encode(guess, False).keys()) for node in nodes]
+            guess_masked = tinynmc.masked_factors(encode(guess, False), masks)
+            for node_id in range(3):
+                js.nodeShowSubmissionMasked(
+                    0,
+                    node_id,
+                    [modulo_to_uint8(m) for m in guess_masked.values()]
+                )
+
+        async def mask_and_submit_target(_):
+            response = await js.retrieveByteFromHTTPBin()
+            target = [response % 2]
+            js.recipientEnable()
+            js.clientMaskAndSubmitTarget()
+            masks = [node.masks(encode(target, True).keys()) for node in nodes]
+            target_masked = tinynmc.masked_factors(encode(target, True), masks)
+            for node_id in range(3):
+                js.nodeShowSubmissionMasked(
+                    1,
+                    node_id,
+                    [modulo_to_uint8(m) for m in target_masked.values()]
+                )
+            compute_and_reveal(guess_masked, target_masked)
+
+        MODULUS = 340282366920938463463374607431768196007
+        guess_masked = {} # Global.
+        signature = [2, 2]
+        nodes = [node(), node(), node()]
+        preprocess(signature, nodes)
+        js.document.getElementById('guess').addEventListener(
+            'click',
+            create_proxy(mask_and_submit_guess)
+        )
+        js.document.getElementById('retrieve').addEventListener(
+            'click',
+            create_proxy(mask_and_submit_target)
+        )
+      </py-script>
+      <input id="active" type="hidden" value="none"/>
+    </section>
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous">
+    </script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous">
+    </script>
+    <script>
+      class Diagram {
+        constructor (elementId, height, thickness) {
+          this.element = document.getElementById(elementId);
+          this.height = height;
+          this.thickness = (thickness !== null) ? 2 : thickness;
+          this.shows = {};
+          this.element.style.position = "relative";
+          this.element.style.height = height + "px";
+        }
+
+        edge (top, elementId, elementIds) {
+          const edge = document.createElement("div");
+          edge.style.position = "absolute";
+          edge.style.top = top + "%";
+          edge.style.border = this.thickness + "px solid var(--color-diagram-edge)";
+          edge.style.opacity = 0;
+          if (elementId !== null) {
+            edge.id = elementId;
+            this.shows[elementId] = (elementIds == null) ? [] : elementIds;
+          }
+          this.element.appendChild(edge);
+          return edge;
+        }
+
+        vertical (index, total, top, height, elementId, elementIds) {
+          const edge = this.edge(top, elementId, elementIds);
+          edge.style.left = Math.round((100 * (1 + (2 * index))) / (2 * total))  + "%";
+          edge.style.height = height + "%";
+          edge.style.width = 0 + "px";
+        }
+
+        horizontal (total, top, elementId, elementIds) {
+          const edge = this.edge(top, elementId, elementIds);
+          const denom = 2 * total, left = Math.round(100 / denom);
+          edge.style.left = left + "%";
+          edge.style.height = 0 + "px";
+          edge.style.width = "calc(" +
+            (2 * this.thickness) + "px + " + Math.round(100 - (100 / denom) - left) +
+          "%)";
+        }
+
+        show (elementId) {
+          document.getElementById(elementId).style.opacity = 1;
+          if (elementId in this.shows) {
+            for (let i = 0; i < this.shows[elementId].length; i++) {
+              this.show(this.shows[elementId][i]);
+            }
+          }
+        }
+      }
+
+      function showBytes(elementId, array) {
+        const bytes = document.getElementById(elementId);
+        bytes.innerHTML = "";
+        bytes.classList.add("bytes");
+        bytes.style.height = "auto";
+        bytes.style.backgroundColor = "#FFFFFF";
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        let tr = document.createElement("tr");
+        for (let i = 0; i < array.length; i++) {
+          const td = document.createElement("td");
+          td.style.backgroundColor = "rgb(" + array[i] + "," + array[i] + "," + array[i] + ")";
+          td.style.height = "10px";
+          tr.appendChild(td);
+          if (i % 16 == 15) {
+              table.appendChild(tr);
+              tr = document.createElement("tr");
+          }
+        }
+        table.appendChild(tr);
+        bytes.appendChild(table);
+      }
+
+      function setOpacities(opacity, elementIds) {
+        elementIds.map(function(elementId) {
+          document.getElementById(elementId).style.opacity = opacity;
+        });
+      }
+
+      async function initialize() {
+        setOpacities(0.2, [
+            "panel-retrieve",
+            "step-nodes", "node-0", "node-1", "node-2",
+            "step-recipient", "recipient"
+        ]);
+        setOpacities(0, [
+            "node-0-masked-0-title", "node-0-masked-1-title", "node-0-share-title",
+            "node-1-masked-0-title", "node-1-masked-1-title", "node-1-share-title",
+            "node-2-masked-0-title", "node-2-masked-1-title", "node-2-share-title",
+        ]);
+
+        $(function() {
+          $("#guess-radio-0-A").checkboxradio({icon: false});
+          $("#guess-radio-0-B").checkboxradio({icon: false});
+          $("#guess-radio-0-A").click(clientEnableGuess);
+          $("#guess-radio-0-B").click(clientEnableGuess);
+        });
+
+        diagramInput = new Diagram("diagram-input", 100);
+        diagramInput.vertical(0, 2, 0, 50, "it0", ["ih"]);
+        diagramInput.vertical(1, 2, 0, 50, "it1", ["ih"]);
+        diagramInput.horizontal(9, 50, "ih", ["ib0", "ib1", "ib2"]);
+        diagramInput.vertical(0, 9, 50, 50, "ib0");
+        diagramInput.vertical(4, 9, 50, 50, "ib1");
+        diagramInput.vertical(8, 9, 50, 50, "ib2");
+
+        diagramOutput = new Diagram("diagram-output", 100);
+        diagramOutput.vertical(0, 3, 0, 50, "ot0");
+        diagramOutput.vertical(1, 3, 0, 50, "ot1");
+        diagramOutput.vertical(2, 3, 0, 50, "ot2");
+        diagramOutput.horizontal(3, 50, "oh");
+        diagramOutput.vertical(0, 1, 50, 50, "ob0");
+      }
+
+      function clientEnableGuess() {
+        document.getElementById("guess").disabled = false;
+      }
+
+      function clientMaskAndSubmitGuess() {
+        guess = $("input[name='guess-radio-0']:checked").val();
+        $("input[name='guess-radio-0']").attr("disabled", true);
+        document.getElementById("guess").disabled = true;
+        diagramInput.show("it0");
+        setOpacities(1, ["panel-retrieve"]);
+        document.getElementById("retrieve").disabled = false;
+      }
+
+      function clientMaskAndSubmitTarget(value) {
+        document.getElementById("retrieve").disabled = true;
+        retrieved = true;
+        diagramInput.show("it1");
+      }
+
+      function nodesEnable() {
+        setOpacities(1, ["step-nodes", "node-0", "node-1", "node-2"]);
+      }
+
+      function nodeShowSubmissionMasked(clientId, nodeId, data) {
+        setOpacities(1, ["node-" + nodeId + "-masked-" + clientId + "-title"]);
+        showBytes("node-" + nodeId + "-masked-" + clientId + "-masked", Array.from(data));
+      }
+
+      function nodeShowShare(nodeId, data) {
+        setOpacities(1, ["node-" + nodeId + "-share-title"]);
+      }
+
+      function recipientEnable() {
+        ["ot0", "ot1", "ot2", "oh", "ob0"].map( function(id) { diagramOutput.show(id); } );
+        setOpacities(1, ["step-recipient", "recipient"]);
+      }
+
+      async function retrieveByteFromHTTPBin() {
+        const response = await fetch("https://httpbin.org/bytes/1");
+        const buf = await response.arrayBuffer();
+        const arr = new Uint8Array(buf);
+        const target = arr[0];
+        document.getElementById("target").innerHTML = target;
+        return target;
+      }
+
+      let retrieved = false;
+      let guess = null;
+      let diagramInput = null, diagramOutput = null;
+      function getGuess() { return guess; };
+      window.onload = initialize;
+    </script>
+  </body>
+</html>
