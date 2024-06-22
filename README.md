@@ -6,4 +6,4 @@ tinyETH is inspired by the tinybin demo from the Nillion team. If the user's gue
 
 This was my submission to the Nillion tinydemo library bounty.
 
-Show and Tell Github Discussion Link - 
+Show and Tell Github Discussion Link - https://github.com/orgs/NillionNetwork/discussions/63
