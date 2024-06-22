@@ -319,7 +319,7 @@
             <ol start="1">
               <li>
                 <div>
-                  The user submits a guess of the current ETH price and the actual price is obtained from etherscan.io API service. Masks are then requested from the nodes for both values and are broadcast.
+                  The user submits a guess of the current ETH price in USD and the actual price is obtained from etherscan.io API service. Masks are then requested from the nodes for both values and are broadcast.
                 </div>
               </li>
             </ol>
@@ -814,7 +814,7 @@
         // Extracting the value of "ethusd" and rounding it to 2 decimal places
         const target = parseFloat(data.result.ethusd).toFixed(2);
 
-        document.getElementById("target").innerHTML = target;
+        document.getElementById("target").innerHTML = target + " USD";
         return target;
       }
 
