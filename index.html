@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>tinybin: Secure Comparison of User's Guess to API-Supplied Target</title>
+    <title>tinyETH: Secure Comparison of User's ETH Price Guess to etherscan.io community price API Supplied Target</title>
     <script>
       var favIcon = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAGFBMVEUAAABHcEwAAAAAAAAAAAAAAAAAAAAAAACpMnD0AAAAB3RSTlNjAL+fpPk8rO4B2AAAADNJREFUGJVjYEQDDIxsLMxwwMIGFGBgRwIMOAVYgQBZgAlkHNMgEwB6joUB7E8WiOfQAADiPANLertncwAAAABJRU5ErkJggg==";
       var docHead = document.getElementsByTagName('head')[0];
@@ -291,7 +291,7 @@
       <div class="card-deck mb-3">
         <div class="card mb-4">
           <div class="card-body">
-            <h1><b>tinybin</b>: Secure Comparison of User's Guess to API-Supplied Target</h1>
+            <h1><b>tinyETH</b>: Secure Comparison of User's ETH Price Guess to API Target</h1>
             <hr/>
             <h2>
               <p>
@@ -319,7 +319,7 @@
             <ol start="1">
               <li>
                 <div>
-                  For both the guess that is supplied by a user and the target that is obtained from a third-party API service, masks are requested from the nodes. The guess and target number are then each masked and broadcast to the nodes.
+                  The user submits a guess of the current ETH price and the actual price is obtained from etherscan.io API service. Masks are then requested from the nodes for both values and are broadcast.
                 </div>
               </li>
             </ol>
@@ -329,17 +329,19 @@
           <div class="panel" id="panel-guess">
             <div class="entity client">
               <div>
-                <div><h3>Submit Guess (from User)</h3></div>
+                <div><h3>Submit ETH Price Guess (from User)</h3></div>
                 <div>
                   <div style="height:100%;">
                     <div>
-                      <fieldset class="guess-radio">
+                      <br>
+                      <input type="number" id="numberInput" name="numberInput">
+                      <!-- <fieldset class="guess-radio">
                         <label for="guess-radio-0-A" class="ui-checkboxradio-label ui-corner-all ui-button ui-widget ui-checkboxradio-radio-label">Even</label>
                         <input type="radio" class="ui-checkboxradio ui-helper-hidden-accessible" name="guess-radio-0" id="guess-radio-0-A" value="0">
                         <br/>
                         <label for="guess-radio-0-B" class="ui-checkboxradio-label ui-corner-all ui-button ui-widget ui-checkboxradio-radio-label">Odd</label>
                         <input type="radio" class="ui-checkboxradio ui-helper-hidden-accessible" name="guess-radio-0" id="guess-radio-0-B" value="1">
-                      </fieldset>
+                      </fieldset> -->
                     </div>
                   </div>
                 </div>
@@ -352,7 +354,7 @@
           <div class="panel" id="panel-retrieve">
             <div class="entity client">
               <div>
-                <div><h3>Submit Target (from API Endpoint)</h3></div>
+                <div><h3>Submit Target (Actual ETH Price from etherscan.io API Endpoint)</h3></div>
                 <div>
                   <div style="height:100%;">
                     <table style="height:100%; width:100%; border:1px solid #000000; font-size:20px;">
@@ -360,7 +362,7 @@
                         <td id="target">
                           The target value obtained
                           <br/>via an API GET request sent to
-                          <a href="https://httpbin.org/bytes/1"><code>https://httpbin.org/bytes/1</code></a>
+                          <a href="https://api.etherscan.io/api?module=stats&action=ethprice"><code>https://api.etherscan.io/api?module=stats&action=ethprice</code></a>
                           <br/>will appear here.
                         </td>
                       </tr>
@@ -573,16 +575,16 @@
                 show_share(result_share, 'node-' + str(node_id) + '-share')
 
             js.document.getElementById('recipient-output').innerHTML = (
-                'User guessed correctly!'
+                'User guessed the ETH Price incorrectly as the guess is outside the +1% or -1% threshold of actual price!.'
                 if int(sum(shares)) == 0 else
-                'User guessed incorrectly.'
+                'User guessed the ETH Price correctly within the +1% or -1% threshold of actual price!'
             )
 
         def mask_and_submit_guess(_):
             global guess_masked
             js.clientMaskAndSubmitGuess()
-            parity = js.getGuess()
-            guess = [secrets.randbelow(MODULUS), int(parity)]
+            guess = js.getGuess()
+            guess = [guess, 0]
             js.nodesEnable()
             masks = [node.masks(encode(guess, False).keys()) for node in nodes]
             guess_masked = tinynmc.masked_factors(encode(guess, False), masks)
@@ -594,8 +596,18 @@
                 )
 
         async def mask_and_submit_target(_):
-            response = await js.retrieveByteFromHTTPBin()
-            target = [response % 2]
+            prediction = js.getGuess()
+            response = await js.retrieveETHPriceFromEtherscan()
+            eth_price = int(round(float(response)))
+
+            lower_bound = eth_price - (eth_price * 0.01)
+            upper_bound = eth_price + (eth_price * 0.01)
+
+            if (prediction >= lower_bound) and (prediction <= upper_bound):
+                target = [1]
+            else:
+                target = [0]
+
             js.recipientEnable()
             js.clientMaskAndSubmitTarget()
             masks = [node.masks(encode(target, True).keys()) for node in nodes]
@@ -608,7 +620,6 @@
                 )
             compute_and_reveal(guess_masked, target_masked)
 
-        MODULUS = 340282366920938463463374607431768196007
         guess_masked = {} # Global.
         signature = [2, 2]
         nodes = [node(), node(), node()]
@@ -726,10 +737,7 @@
         ]);
 
         $(function() {
-          $("#guess-radio-0-A").checkboxradio({icon: false});
-          $("#guess-radio-0-B").checkboxradio({icon: false});
-          $("#guess-radio-0-A").click(clientEnableGuess);
-          $("#guess-radio-0-B").click(clientEnableGuess);
+          $("#numberInput").click(clientEnableGuess);
         });
 
         diagramInput = new Diagram("diagram-input", 100);
@@ -753,8 +761,16 @@
       }
 
       function clientMaskAndSubmitGuess() {
-        guess = $("input[name='guess-radio-0']:checked").val();
-        $("input[name='guess-radio-0']").attr("disabled", true);
+        guess = $("#numberInput").val();
+        // $("input[name='guess-radio-0']").attr("disabled", true);
+        if (guess === "" ||!/\d/.test(guess)) {
+              // Disable the submit button and return if the guess is empty or not a number
+              document.getElementById("guess").disabled = true;
+              return
+          }
+
+        guess = Math.floor(guess)
+
         document.getElementById("guess").disabled = true;
         diagramInput.show("it0");
         setOpacities(1, ["panel-retrieve"]);
@@ -785,11 +801,19 @@
         setOpacities(1, ["step-recipient", "recipient"]);
       }
 
-      async function retrieveByteFromHTTPBin() {
-        const response = await fetch("https://httpbin.org/bytes/1");
-        const buf = await response.arrayBuffer();
-        const arr = new Uint8Array(buf);
-        const target = arr[0];
+      async function retrieveETHPriceFromEtherscan() {
+
+        const response = await fetch("https://api.etherscan.io/api?module=stats&action=ethprice");
+
+        if (!response.ok) {
+            throw new Error(`HTTP error status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Extracting the value of "ethusd" and rounding it to 2 decimal places
+        const target = parseFloat(data.result.ethusd).toFixed(2);
+
         document.getElementById("target").innerHTML = target;
         return target;
       }
